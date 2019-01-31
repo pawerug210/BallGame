@@ -1,28 +1,31 @@
 from vpython import *
+import math
 
 ringThickness = 0.2
 targetSpeed = 0.1
 ballRadius = 1
 ringRadius = 2
-floorRadius = 10
+ringHeight = 10
+floorRadius = 5
 wallThickness = 0.1
+gameBoundsX = (-floorRadius, floorRadius)
 
 g = -9.8
 
 increaseStep = 0.000005
-blockBall = False
-gameBoundsX = (-floorRadius, floorRadius)
 
 
 class VGame(object):
 
-    targetDirection = True  # 1 right, 0 left
+    _targetDirection = True  # 1 right, 0 left
+    Points = 0
 
     def __init__(self):
         self.ball = sphere(radius=ballRadius, color=color.red)
         self.floor = box(pos=vector(0, 0, 0), size=vector(2 * floorRadius, wallThickness, 2 * floorRadius), color=color.green)
-        self.target = ring(pos=vector(0, 10, -10), axis=vector(0, 0, 1), radius=ringRadius, thickness=ringThickness,
-                           color=color.green, velocity=vector(targetSpeed, 0, 0))
+        self.target = ring(pos=vector(0, ringHeight, -floorRadius), axis=vector(0, 0, 1), radius=ringRadius, thickness=ringThickness,
+                           color=color.red, velocity=vector(targetSpeed, 0, 0))
+        self.score = label(pos=vector(floorRadius, 0, 0), depth=-0.1, color=color.blue, billboard=True)
         self.initialize()
 
         # events
@@ -35,16 +38,16 @@ class VGame(object):
         self.ball.velocity = vector(0, 0, 0)
 
         # params
-        self.blockBall = False
-        self.throw = False
-        self.force = 0
-        self.dt = 0
+        self._blockBall = False
+        self._throw = False
+        self._force = 0
+        self._dt = 0
 
     def run(self, _rate=60):
         while True:
             rate(_rate)
             self._updateScene()
-            if self.isFinished():
+            if self._updateScore() or self.isFinished():
                 self.restart()
 
     def restart(self):
@@ -58,11 +61,11 @@ class VGame(object):
         self._updateBall()
 
     def _updateBall(self):
-        if not self.blockBall:
+        if not self._blockBall:
             self._moveBall()
-        elif self.throw:
+        elif self._throw:
             self._flyBall()
-            self.dt += 0.001
+            self._dt += 0.001
 
     def _moveBall(self):
         ballPositionX = scene.mouse.pos.x
@@ -78,30 +81,45 @@ class VGame(object):
         self.ball.pos = self.ball.pos + self.ball.velocity
 
     def _changeBallVelocityY(self):
-        self.ball.velocity.y = self.force + g * self.dt
+        self.ball.velocity.y = self._force + g * self._dt
 
     def _changeBallVelocityZ(self):
         # constant speed
-        self.ball.velocity.z = -self.force
+        self.ball.velocity.z = -self._force
+
+    def _updateScore(self):
+        updated = False
+        if self._ballFitTarget():
+            self.Points += 1
+            updated = True
+        self.score.text = "Points: {0}".format(str(self.Points))
+        return updated
 
     def throwBall(self):
-        self.throw = True
+        self._throw = True
 
     def startIncreasingForce(self):
-        self.blockBall = True
-        while not self.throw:
+        self._blockBall = True
+        while not self._throw:
             delay = 100
             while delay > 0:
                 delay -= 1
-            self.force += increaseStep
+            self._force += increaseStep
 
     def _updateTarget(self):
         self.target.pos = self.target.pos + self.target.velocity
-        positionBound = self.target.pos.x + (ringRadius if self.targetDirection else -ringRadius)
-        if (positionBound < gameBoundsX[0] and not self.targetDirection) or \
-                (positionBound > gameBoundsX[1] and self.targetDirection):
-            self.targetDirection = not self.targetDirection
+        positionBound = self.target.pos.x + (ringRadius if self._targetDirection else -ringRadius)
+        if (positionBound < gameBoundsX[0] and not self._targetDirection) or \
+                (positionBound > gameBoundsX[1] and self._targetDirection):
+            self._targetDirection = not self._targetDirection
             self.target.velocity.x = -self.target.velocity.x
+
+    # check distances between target center and ball center
+    def _ballFitTarget(self):
+        targetPos = self.target.pos
+        ballPos = self.ball.pos
+        dist = math.sqrt((targetPos.x - ballPos.x) ** 2 + (targetPos.y - ballPos.y) ** 2)
+        return abs(targetPos.z - ballPos.z) < (ballRadius / 2) and dist < self.target.radius - (ballRadius / 2)
 
 
 game = VGame()
