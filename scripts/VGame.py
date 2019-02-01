@@ -120,7 +120,3 @@ class VGame(object):
         ballPos = self.ball.pos
         dist = math.sqrt((targetPos.x - ballPos.x) ** 2 + (targetPos.y - ballPos.y) ** 2)
         return abs(targetPos.z - ballPos.z) < (ballRadius / 2) and dist < self.target.radius - (ballRadius / 2)
-
-
-game = VGame()
-game.run()
