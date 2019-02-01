@@ -1,0 +1,11 @@
+{
+	"ringThickness" : 0.2,
+	"targetSpeed" : 0.1,
+	"ballRadius" : 1.0,
+	"ringRadius" : 2.0,
+	"ringHeight" : 10.0,
+	"floorRadius" : 20.0,
+	"wallThickness" : 0.1,
+	"g" : -9.8,
+	"increaseStep" : 0.000005
+}
